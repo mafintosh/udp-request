@@ -1,6 +1,6 @@
 {
   "name": "udp-request",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "WIP - nothing to see here",
   "main": "index.js",
   "dependencies": {
