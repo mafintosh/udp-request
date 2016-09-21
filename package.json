@@ -1,7 +1,7 @@
 {
   "name": "udp-request",
   "version": "1.0.0",
-  "description": "WIP - nothing to see here",
+  "description": "Small module for making requests/responses over UDP",
   "main": "index.js",
   "dependencies": {
     "inherits": "^2.0.3"
