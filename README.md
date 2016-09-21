@@ -6,6 +6,8 @@ Small module for making requests/responses over UDP
 npm install udp-request
 ```
 
+[![build status](http://img.shields.io/travis/mafintosh/udp-request.svg?style=flat)](http://travis-ci.org/mafintosh/udp-request)
+
 ## Usage
 
 ``` js
