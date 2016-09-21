@@ -18,6 +18,30 @@ tape('request', function (t) {
   })
 })
 
+tape('multiple request', function (t) {
+  t.plan(4)
+
+  var socket = udp()
+
+  socket.on('request', function (value, peer) {
+    socket.response(value, peer)
+  })
+
+  socket.listen(0, function () {
+    socket.request('hello', {port: socket.address().port, host: '127.0.0.1'}, function (err, echo) {
+      if (!socket.inflight) socket.destroy()
+      t.error(err, 'no error')
+      t.same(echo, new Buffer('hello'), 'echoed data')
+    })
+
+    socket.request('hello', {port: socket.address().port, host: '127.0.0.1'}, function (err, echo) {
+      if (!socket.inflight) socket.destroy()
+      t.error(err, 'no error')
+      t.same(echo, new Buffer('hello'), 'echoed data')
+    })
+  })
+})
+
 tape('timeout', function (t) {
   var socket = udp()
 

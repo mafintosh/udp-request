@@ -20,6 +20,7 @@ function UDP (opts) {
 
   this.socket = opts.socket || dgram.createSocket('udp4')
   this.retry = !!opts.retry
+  this.inflight = 0
 
   this._tick = (Math.random() * 32767) | 0
   this._tids = []
@@ -29,6 +30,7 @@ function UDP (opts) {
   this.socket.on('error', onerror)
   this.socket.on('message', onmessage)
   this.socket.on('listening', onlistening)
+  this.socket.on('close', onclose)
 
   function onerror (err) {
     if (err.code === 'EPERM' || err.code === 'EACCES') self.emit('error', err)
@@ -41,6 +43,10 @@ function UDP (opts) {
 
   function onlistening () {
     self.emit('listening')
+  }
+
+  function onclose () {
+    self.emit('closex')
   }
 
   function kick () {
@@ -176,6 +182,8 @@ UDP.prototype._pull = function (tid) {
   this._reqs[free] = null
   this._tids[free] = -1
 
+  this.inflight--
+
   return req
 }
 
@@ -187,8 +195,9 @@ UDP.prototype._push = function (tid, buf, peer, opts, cb) {
     free = this._tids.push(-1) - 1
   }
 
-  this._tids[free] = tid
+  this.inflight++
 
+  this._tids[free] = tid
   this._reqs[free] = {
     callback: cb || noop,
     peer: peer,
