@@ -1,0 +1,26 @@
+{
+  "name": "udp-request",
+  "version": "0.0.0",
+  "description": "WIP - nothing to see here",
+  "main": "index.js",
+  "dependencies": {
+    "inherits": "^2.0.3"
+  },
+  "devDependencies": {
+    "standard": "^8.1.0",
+    "tape": "^4.6.0"
+  },
+  "scripts": {
+    "test": "standard && tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/udp-request.git"
+  },
+  "author": "Mathias Buus (@mafintosh)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/udp-request/issues"
+  },
+  "homepage": "https://github.com/mafintosh/udp-request"
+}
