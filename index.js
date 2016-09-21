@@ -149,9 +149,10 @@ UDP.prototype._onmessage = function (message, rinfo) {
     return
   }
 
+  var state = this._pull(tid)
+
   this.emit('response', value, peer)
 
-  var state = this._pull(tid)
   if (state) state.callback(null, value, peer)
 }
 
