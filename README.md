@@ -36,7 +36,9 @@ Create a new request/response udp socket. Options include:
 ``` js
 {
   socket: udpSocket, // supply your own udp socket
-  retry: true // retry requests if they time out. defaults to false
+  retry: true, // retry requests if they time out. defaults to false
+  requestEncoding: someEncoder, // abstract-encoding compliant encoder
+  responseEncoding: someEncoder, // abstract-encoding compliant encoder
 }
 ```
 
@@ -80,6 +82,14 @@ Emitted when a critical error happens.
 #### `socket.on('warning', err)`
 
 Emitted when a non critical error happens (you usually do not need to listen for this).
+
+#### `socket.on('close')`
+
+Emitted when the request socket closes (after it is destroyed).
+
+#### `socket.on('listening')`
+
+Emitted when the socket is listening.
 
 #### `socket.listen([port], [callback])`
 

@@ -1,6 +1,7 @@
 var dgram = require('dgram')
 var events = require('events')
 var inherits = require('inherits')
+var passthrough = require('passthrough-encoding')
 
 var ETIMEDOUT = new Error('Request timed out')
 ETIMEDOUT.timeout = true
@@ -21,6 +22,8 @@ function UDP (opts) {
   this.socket = opts.socket || dgram.createSocket('udp4')
   this.retry = !!opts.retry
   this.inflight = 0
+  this.requestEncoding = opts.requestEncoding || opts.encoding || passthrough
+  this.responseEncoding = opts.responseEncoding || opts.encoding || passthrough
 
   this._tick = (Math.random() * 32767) | 0
   this._tids = []
@@ -46,7 +49,7 @@ function UDP (opts) {
   }
 
   function onclose () {
-    self.emit('closex')
+    self.emit('close')
   }
 
   function kick () {
@@ -66,54 +69,51 @@ UDP.prototype.listen = function (port, cb) {
   this.socket.bind(port, cb)
 }
 
-UDP.prototype.request = function (buf, peer, opts, cb) {
-  if (typeof buf === 'string') buf = new Buffer(buf)
-  if (typeof opts === 'function') return this._request(buf, peer, {}, opts)
-  return this._request(buf, peer, opts || {}, cb || noop)
+UDP.prototype.request = function (val, peer, opts, cb) {
+  if (typeof opts === 'function') return this._request(val, peer, {}, opts)
+  return this._request(val, peer, opts || {}, cb || noop)
 }
 
-UDP.prototype._request = function (buf, peer, opts, cb) {
+UDP.prototype._request = function (val, peer, opts, cb) {
   if (this._tick === 32767) this._tick = 0
 
   var tid = this._tick++
   var header = 32768 | tid
-  var message = new Buffer(buf.length + 2)
+  var message = new Buffer(this.requestEncoding.encodingLength(val) + 2)
 
   message.writeUInt16BE(header, 0)
-  buf.copy(message, 2)
+  this.requestEncoding.encode(val, message, 2)
 
-  this._push(tid, message, peer, opts, cb)
+  this._push(tid, val, message, peer, opts, cb)
   this.socket.send(message, 0, message.length, peer.port, peer.host)
 
   return tid
 }
 
-UDP.prototype.forwardRequest = function (buf, from, to) {
-  if (typeof buf === 'string') buf = new Buffer(buf)
-  this._forward(true, buf, from, to)
+UDP.prototype.forwardRequest = function (val, from, to) {
+  this._forward(true, val, from, to)
 }
 
-UDP.prototype.forwardResponse = function (buf, from, to) {
-  if (typeof buf === 'string') buf = new Buffer(buf)
-  this._forward(false, buf, from, to)
+UDP.prototype.forwardResponse = function (val, from, to) {
+  this._forward(false, val, from, to)
 }
 
-UDP.prototype._forward = function (request, buf, from, to) {
-  var message = new Buffer(buf.length + 2)
+UDP.prototype._forward = function (request, val, from, to) {
+  var enc = request ? this.requestEncoding : this.responseEncoding
+  var message = new Buffer(enc.encodingLength(val) + 2)
   var header = (request ? 32768 : 0) | from.tid
 
   message.writeUInt16BE(header, 0)
-  buf.copy(message, 2)
+  enc.encode(val, message, 2)
 
   this.socket.send(message, 0, message.length, to.port, to.host)
 }
 
-UDP.prototype.response = function (buf, peer, cb) {
-  if (typeof buf === 'string') buf = new Buffer(buf)
-  var message = new Buffer(buf.length + 2)
+UDP.prototype.response = function (val, peer, cb) {
+  var message = new Buffer(this.responseEncoding.encodingLength(val) + 2)
 
   message.writeUInt16BE(peer.tid, 0)
-  buf.copy(message, 2)
+  this.responseEncoding.encode(val, message, 2)
 
   this.socket.send(message, 0, message.length, peer.port, peer.host)
 }
@@ -141,7 +141,15 @@ UDP.prototype._cancel = function (i, err) {
 UDP.prototype._onmessage = function (message, rinfo) {
   var request = !!(message[0] & 128)
   var tid = message.readUInt16BE(0) & 32767
-  var value = message.slice(2)
+  var enc = request ? this.requestEncoding : this.responseEncoding
+
+  try {
+    var value = enc.decode(message, 2)
+  } catch (err) {
+    this.emit('warning', err)
+    return
+  }
+
   var peer = {port: rinfo.port, host: rinfo.address, tid: tid, request: request}
 
   if (request) {
@@ -151,9 +159,8 @@ UDP.prototype._onmessage = function (message, rinfo) {
 
   var state = this._pull(tid)
 
-  this.emit('response', value, peer)
-
-  if (state) state.callback(null, value, peer)
+  this.emit('response', value, peer, state && state.request)
+  if (state) state.callback(null, value, peer, state.request)
 }
 
 UDP.prototype._checkTimeouts = function () {
@@ -188,7 +195,7 @@ UDP.prototype._pull = function (tid) {
   return req
 }
 
-UDP.prototype._push = function (tid, buf, peer, opts, cb) {
+UDP.prototype._push = function (tid, req, buf, peer, opts, cb) {
   var retry = opts.retry !== undefined ? opts.retry : this.retry
   var free = this._tids.indexOf(-1)
   if (free === -1) {
@@ -201,6 +208,7 @@ UDP.prototype._push = function (tid, buf, peer, opts, cb) {
   this._tids[free] = tid
   this._reqs[free] = {
     callback: cb || noop,
+    request: req,
     peer: peer,
     buffer: buf,
     timeout: 4,

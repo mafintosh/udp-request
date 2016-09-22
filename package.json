@@ -4,7 +4,8 @@
   "description": "Small module for making requests/responses over UDP",
   "main": "index.js",
   "dependencies": {
-    "inherits": "^2.0.3"
+    "inherits": "^2.0.3",
+    "passthrough-encoding": "^1.2.0"
   },
   "devDependencies": {
     "standard": "^8.1.0",
