@@ -24,6 +24,7 @@ function UDP (opts) {
   this.inflight = 0
   this.requestEncoding = opts.requestEncoding || opts.encoding || passthrough
   this.responseEncoding = opts.responseEncoding || opts.encoding || passthrough
+  this.destroyed = false
 
   this._tick = (Math.random() * 32767) | 0
   this._tids = []
@@ -75,6 +76,7 @@ UDP.prototype.request = function (val, peer, opts, cb) {
 }
 
 UDP.prototype._request = function (val, peer, opts, cb) {
+  if (this.destroyed) return cb(new Error('Request cancelled'))
   if (this._tick === 32767) this._tick = 0
 
   var tid = this._tick++
@@ -99,6 +101,8 @@ UDP.prototype.forwardResponse = function (val, from, to) {
 }
 
 UDP.prototype._forward = function (request, val, from, to) {
+  if (this.destroyed) return
+
   var enc = request ? this.requestEncoding : this.responseEncoding
   var message = new Buffer(enc.encodingLength(val) + 2)
   var header = (request ? 32768 : 0) | from.tid
@@ -109,7 +113,9 @@ UDP.prototype._forward = function (request, val, from, to) {
   this.socket.send(message, 0, message.length, to.port, to.host)
 }
 
-UDP.prototype.response = function (val, peer, cb) {
+UDP.prototype.response = function (val, peer) {
+  if (this.destroyed) return
+
   var message = new Buffer(this.responseEncoding.encodingLength(val) + 2)
 
   message.writeUInt16BE(peer.tid, 0)
@@ -119,6 +125,9 @@ UDP.prototype.response = function (val, peer, cb) {
 }
 
 UDP.prototype.destroy = function (err) {
+  if (this.destroyed) return
+  this.destroyed = true
+
   clearInterval(this._interval)
   this.socket.close()
   for (var i = 0; i < this._reqs.length; i++) {
@@ -139,6 +148,8 @@ UDP.prototype._cancel = function (i, err) {
 }
 
 UDP.prototype._onmessage = function (message, rinfo) {
+  if (this.destroyed) return
+
   var request = !!(message[0] & 128)
   var tid = message.readUInt16BE(0) & 32767
   var enc = request ? this.requestEncoding : this.responseEncoding
