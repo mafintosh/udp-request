@@ -144,6 +144,7 @@ UDP.prototype._cancel = function (i, err) {
   var req = this._reqs[i]
   this._tids[i] = -1
   this._reqs[i] = null
+  this.inflight--
   req.callback(err || new Error('Request cancelled'))
 }
 
