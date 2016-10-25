@@ -37,7 +37,7 @@ function UDP (opts) {
   this.socket.on('close', onclose)
 
   function onerror (err) {
-    if (err.code === 'EPERM' || err.code === 'EACCES') self.emit('error', err)
+    if (err.code === 'EADDRINUSE' || err.code === 'EPERM' || err.code === 'EACCES') self.emit('error', err)
     else self.emit('warning', err)
   }
 
