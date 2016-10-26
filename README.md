@@ -35,6 +35,7 @@ Create a new request/response udp socket. Options include:
 
 ``` js
 {
+  timeout: 1000, // request timeout
   socket: udpSocket, // supply your own udp socket
   retry: true, // retry requests if they time out. defaults to false
   requestEncoding: someEncoder, // abstract-encoding compliant encoder

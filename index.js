@@ -7,7 +7,7 @@ var ETIMEDOUT = new Error('Request timed out')
 ETIMEDOUT.timeout = true
 ETIMEDOUT.code = 'ETIMEDOUT'
 
-var RETRIES = [4, 6, 12]
+var RETRIES = [4, 8, 12]
 
 module.exports = UDP
 
@@ -16,6 +16,7 @@ function UDP (opts) {
   if (!opts) opts = {}
 
   var self = this
+  var timeout = Math.ceil(opts.timeout || 1000, 4)
 
   events.EventEmitter.call(this)
 
@@ -29,7 +30,7 @@ function UDP (opts) {
   this._tick = (Math.random() * 32767) | 0
   this._tids = []
   this._reqs = []
-  this._interval = setInterval(kick, 250)
+  this._interval = setInterval(kick, Math.floor(timeout / 4))
 
   this.socket.on('error', onerror)
   this.socket.on('message', onmessage)
