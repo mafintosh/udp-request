@@ -223,7 +223,7 @@ UDP.prototype._push = function (tid, req, buf, peer, opts, cb) {
     request: req,
     peer: peer,
     buffer: buf,
-    timeout: 4,
+    timeout: 5,
     tries: retry ? 0 : RETRIES.length
   }
 }
