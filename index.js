@@ -173,7 +173,7 @@ UDP.prototype._onmessage = function (message, rinfo) {
   var state = this._pull(tid)
 
   this.emit('response', value, peer, state && state.request)
-  if (state) state.callback(null, value, peer, state.request)
+  if (state) state.callback(null, value, peer, state.request, state.peer)
 }
 
 UDP.prototype._checkTimeouts = function () {
