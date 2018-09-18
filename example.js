@@ -7,7 +7,7 @@ socket.on('request', function (request, peer) {
 })
 
 socket.listen(10000, function () {
-  socket.request('hello', {port: 10000, host: '127.0.0.1'}, function (err, response) {
+  socket.request('hello', { port: 10000, host: '127.0.0.1' }, function (err, response) {
     if (err) throw err
     console.log('response', response.toString())
     socket.destroy()
